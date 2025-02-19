@@ -1,0 +1,326 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// Utility function to clear the console
+void clearScreen() {
+    cout << "\033[2J\033[1;1H";
+}
+
+class Student {
+public:
+    string id;
+    string name;
+    string password;
+    vector<pair<string, int>> marks;
+
+    Student() {}
+
+    Student(string id, string name, string password) 
+        : id(id), name(name), password(password) {}
+
+    void addMark(string subject, int mark) {
+        marks.push_back({subject, mark});
+    }
+
+    void viewMarks() {
+        cout << "Marks for " << name << " (ID: " << id << "):" << endl;
+        for (auto &mark : marks) {
+            cout << "Subject: " << mark.first << ", Mark: " << mark.second << endl;
+        }
+    }
+
+    void saveToFile() {
+        ofstream outFile("students.txt", ios::app);
+        outFile << id << " " << name << " " << password << "\n";
+        outFile.close();
+    }
+
+    static Student login(string id, string password) {
+        ifstream inFile("students.txt");
+        string sid, sname, spassword;
+        while (inFile >> sid >> sname >> spassword) {
+            if (sid == id && spassword == password) {
+                Student student(sid, sname, spassword);
+                return student;
+            }
+        }
+        throw invalid_argument("Invalid ID or Password");
+    }
+};
+
+class Teacher {
+public:
+    string id;
+    string name;
+    string password;
+
+    Teacher() {}
+
+    Teacher(string id, string name, string password) 
+        : id(id), name(name), password(password) {}
+
+    void saveToFile() {
+        ofstream outFile("teachers.txt", ios::app);
+        outFile << id << " " << name << " " << password << "\n";
+        outFile.close();
+    }
+
+    static Teacher login(string id, string password) {
+        ifstream inFile("teachers.txt");
+        string tid, tname, tpassword;
+        while (inFile >> tid >> tname >> tpassword) {
+            if (tid == id && tpassword == password) {
+                Teacher teacher(tid, tname, tpassword);
+                return teacher;
+            }
+        }
+        throw invalid_argument("Invalid ID or Password");
+    }
+
+    void assignMark(string studentId, string subject, int mark) {
+        ifstream inFile("students.txt");
+        ofstream outFile("students_temp.txt");
+        string sid, sname, spassword;
+        while (inFile >> sid >> sname >> spassword) {
+            outFile << sid << " " << sname << " " << spassword << "\n";
+            if (sid == studentId) {
+                Student student(sid, sname, spassword);
+                student.addMark(subject, mark);
+                // Save marks back to the file (simplified)
+            }
+        }
+        inFile.close();
+        outFile.close();
+        remove("students.txt");
+        rename("students_temp.txt", "students.txt");
+    }
+};
+
+class Admin {
+public:
+    string id;
+    string name;
+    string password;
+
+    Admin() {}
+
+    Admin(string id, string name, string password) 
+        : id(id), name(name), password(password) {}
+
+    void saveToFile() {
+        ofstream outFile("admins.txt", ios::app);
+        outFile << id << " " << name << " " << password << "\n";
+        outFile.close();
+    }
+
+    static Admin login(string id, string password) {
+        ifstream inFile("admins.txt");
+        string aid, aname, apassword;
+        while (inFile >> aid >> aname >> apassword) {
+            if (aid == id && apassword == password) {
+                Admin admin(aid, aname, apassword);
+                return admin;
+            }
+        }
+        throw invalid_argument("Invalid ID or Password");
+    }
+
+    static void viewStudentList() {
+        ifstream inFile("students.txt");
+        string id, name, password;
+        cout << "Student List:" << endl;
+        while (inFile >> id >> name >> password) {
+            cout << "ID: " << id << ", Name: " << name << endl;
+        }
+    }
+};
+
+
+void showMainMenu() {
+    cout << "Welcome to Student Management System" << endl;
+    cout << "1. Student" << endl;
+    cout << "2. Teacher" << endl;
+    cout << "3. Admin" << endl;
+    cout << "4. Developer Info" << endl;
+    cout << "5. Exit" << endl;
+}
+
+void showSubMenu(string userType) {
+    cout << userType << " Menu:" << endl;
+    cout << "1. Login" << endl;
+    cout << "2. Create Account" << endl;
+    cout << "3. Back to Home" << endl;
+}
+
+void developerInfo() {
+    cout << "Developers:" << endl;
+    cout << "1. Dev One" << endl;
+    cout << "2. Dev Two" << endl;
+    cout << "3. Dev Three" << endl;
+}
+
+void handleStudent() {
+    int choice;
+    while (true) {
+        clearScreen();
+        showSubMenu("Student");
+        cin >> choice;
+        if (choice == 1) {
+            string id, password;
+            cout << "Enter Student ID: ";
+            cin >> id;
+            cout << "Enter Password: ";
+            cin >> password;
+            try {
+                Student student = Student::login(id, password);
+                student.viewMarks();
+            } catch (const invalid_argument &e) {
+                cout << e.what() << endl;
+            }
+        } else if (choice == 2) {
+            string id, name, password;
+            cout << "Enter Student ID: ";
+            cin >> id;
+            cout << "Enter Name: ";
+            cin >> name;
+            cout << "Enter Password: ";
+            cin >> password;
+            Student student(id, name, password);
+            student.saveToFile();
+            cout << "Student account created successfully!" << endl;
+        } else if (choice == 3) {
+            break;
+        } else {
+            cout << "Invalid choice! Try again." << endl;
+        }
+        cout << "Press any key to continue..." << endl;
+        cin.ignore();
+        cin.get();
+    }
+}
+
+void handleTeacher() {
+    int choice;
+    while (true) {
+        clearScreen();
+        showSubMenu("Teacher");
+        cin >> choice;
+        if (choice == 1) {
+            string id, password;
+            cout << "Enter Teacher ID: ";
+            cin >> id;
+            cout << "Enter Password: ";
+            cin >> password;
+            try {
+                Teacher teacher = Teacher::login(id, password);
+                string studentId, subject;
+                int mark;
+                cout << "Enter Student ID to assign mark: ";
+                cin >> studentId;
+                cout << "Enter Subject: ";
+                cin >> subject;
+                cout << "Enter Mark: ";
+                cin >> mark;
+                teacher.assignMark(studentId, subject, mark);
+            } catch (const invalid_argument &e) {
+                cout << e.what() << endl;
+            }
+        } else if (choice == 2) {
+            string id, name, password;
+            cout << "Enter Teacher ID: ";
+            cin >> id;
+            cout << "Enter Name: ";
+            cin >> name;
+            cout << "Enter Password: ";
+            cin >> password;
+            Teacher teacher(id, name, password);
+            teacher.saveToFile();
+            cout << "Teacher account created successfully!" << endl;
+        } else if (choice == 3) {
+            break;
+        } else {
+            cout << "Invalid choice! Try again." << endl;
+        }
+        cout << "Press any key to continue..." << endl;
+        cin.ignore();
+        cin.get();
+    }
+}
+
+
+void handleAdmin() {
+    int choice;
+    while (true) {
+        clearScreen();
+        showSubMenu("Admin");
+        cin >> choice;
+        if (choice == 1) {
+            string id, password;
+            cout << "Enter Admin ID: ";
+            cin >> id;
+            cout << "Enter Password: ";
+            cin >> password;
+            try {
+                Admin admin = Admin::login(id, password);
+                Admin::viewStudentList();
+            } catch (const invalid_argument &e) {
+                cout << e.what() << endl;
+            }
+        } else if (choice == 2) {
+            string id, name, password;
+            cout << "Enter Admin ID: ";
+            cin >> id;
+            cout << "Enter Name: ";
+            cin >> name;
+            cout << "Enter Password: ";
+            cin >> password;
+            Admin admin(id, name, password);
+            admin.saveToFile();
+            cout << "Admin account created successfully!" << endl;
+        } else if (choice == 3) {
+            break;
+        } else {
+            cout << "Invalid choice! Try again." << endl;
+        }
+        cout << "Press any key to continue..." << endl;
+        cin.ignore();
+        cin.get();
+    }
+}
+
+int main() {
+    int choice;
+    while (true) {
+        clearScreen();
+        showMainMenu();
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                handleStudent();
+                break;
+            case 2:
+            handleTeacher();
+            break;
+            case 3: {
+                Admin::viewStudentList();
+                break;
+            }
+            case 4: {
+                developerInfo();
+                break;
+            }
+            case 5: {
+                exit(0);
+            }
+            default: {
+                cout << "Invalid choice! Try again." << endl;
+            }
+        }
+    }
+}
+
